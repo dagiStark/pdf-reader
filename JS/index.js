@@ -9,7 +9,7 @@ function resetCurrentPDF() {
   currentPDF = {
     file: null,
     countOfPages: 0,
-    currentPage: 0,
+    currentPage: 1,
     zoom: 1.5,
   };
 }
@@ -18,9 +18,9 @@ openFile.addEventListener("click", () => {
   input.click();
 });
 
-input.addEventListener("change", (e) => {
-  const inputFile = e.target.files[0];
-  if (inputFile.type === "application/pdf") {
+input.addEventListener("change", (event) => {
+  const inputFile = event.target.files[0];
+  if (inputFile.type == "application/pdf") {
     const reader = new FileReader();
     reader.readAsDataURL(inputFile);
     reader.onload = () => {
@@ -28,13 +28,37 @@ input.addEventListener("change", (e) => {
       zoomButton.disabled = false;
     };
   } else {
-    alert("Please select a PDF file");
+    alert("The file you are trying to open is not a pdf file!");
+  }
+});
+
+zoomButton.addEventListener("input", () => {
+  if (currentPDF.file) {
+    document.getElementById("zoomValue").innerHTML = zoomButton.value + "%";
+    currentPDF.zoom = parseInt(zoomButton.value) / 100;
+    renderCurrentPage();
+  }
+});
+
+document.getElementById("next").addEventListener("click", () => {
+  const isValidPage = currentPDF.currentPage < currentPDF.countOfPages;
+  if (isValidPage) {
+    currentPDF.currentPage += 1;
+    renderCurrentPage();
+  }
+});
+
+document.getElementById("previous").addEventListener("click", () => {
+  const isValidPage = currentPDF.currentPage - 1 > 0;
+  if (isValidPage) {
+    currentPDF.currentPage -= 1;
+    renderCurrentPage();
   }
 });
 
 function loadPDF(data) {
-  resetCurrentPDF();
   const pdfFile = pdfjsLib.getDocument(data);
+  resetCurrentPDF();
   pdfFile.promise.then((doc) => {
     currentPDF.file = doc;
     currentPDF.countOfPages = doc.numPages;
@@ -46,21 +70,17 @@ function loadPDF(data) {
 
 function renderCurrentPage() {
   currentPDF.file.getPage(currentPDF.currentPage).then((page) => {
-    const context = viewer.getContext("2d");
-    const viewport = page.getViewport({ scale: currentPDF.zoom });
-
+    var context = viewer.getContext("2d");
+    var viewport = page.getViewport({ scale: currentPDF.zoom });
     viewer.height = viewport.height;
     viewer.width = viewport.width;
 
-    const renderContext = {
+    var renderContext = {
       canvasContext: context,
       viewport: viewport,
     };
-
     page.render(renderContext);
   });
-
-  currentPage.innerHTML = `${currentPDF.currentPage + 1} of ${
-    currentPDF.countOfPages
-  }`;
+  currentPage.innerHTML =
+    currentPDF.currentPage + " of " + currentPDF.countOfPages;
 }
